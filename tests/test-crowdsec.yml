@@ -1,0 +1,30 @@
+---
+- name: Apply crowdsec
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - crowdsec
+
+- name: Verify crowdsec
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Assert crowdsec + bouncer active  # noqa: command-instead-of-module
+      ansible.builtin.command: systemctl is-active {{ item }}
+      register: cs
+      changed_when: false
+      failed_when: cs.stdout != 'active'
+      loop: [crowdsec, crowdsec-firewall-bouncer]
+    - name: Assert sshd collection installed
+      ansible.builtin.command: cscli collections list -o json
+      register: coll
+      changed_when: false
+    - name: Assert sshd collection present
+      ansible.builtin.assert:
+        that: "'crowdsecurity/sshd' in coll.stdout"
+        quiet: true
+    - name: Show CrowdSec console status (informational)
+      ansible.builtin.command: cscli console status -o json
+      register: cs_console
+      changed_when: false
+      failed_when: cs_console.rc != 0

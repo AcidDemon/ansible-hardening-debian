@@ -1,0 +1,21 @@
+---
+- name: Apply rootkit_scanners
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - rootkit_scanners
+
+- name: Verify rootkit_scanners
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Assert rkhunter + chkrootkit installed
+      ansible.builtin.command: dpkg -s {{ item }}
+      changed_when: false
+      loop: [rkhunter, chkrootkit]
+    - name: Assert rkhunter daily cron enabled
+      ansible.builtin.command: grep -E '^CRON_DAILY_RUN="true"' /etc/default/rkhunter
+      changed_when: false
+    - name: Assert chkrootkit daily run enabled
+      ansible.builtin.command: grep -E '^RUN_DAILY="true"' /etc/chkrootkit/chkrootkit.conf
+      changed_when: false

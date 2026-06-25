@@ -1,0 +1,48 @@
+---
+- name: Apply ssh_hardening
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - ssh_hardening
+
+- name: Verify ssh_hardening (and that we can still get in)
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Force a fresh SSH connection
+      ansible.builtin.meta: reset_connection
+    - name: Reconnect succeeds
+      ansible.builtin.wait_for_connection:
+        timeout: 30
+    - name: Effective sshd config disables root + password
+      ansible.builtin.command: sshd -T
+      register: sshd_t
+      changed_when: false
+    - name: Assert hardened directives
+      ansible.builtin.assert:
+        that:
+          - "'permitrootlogin no' in sshd_t.stdout"
+          - "'passwordauthentication no' in sshd_t.stdout"
+          - "'allowgroups sshusers' in sshd_t.stdout"
+        quiet: true
+    - name: Assert extra sshd directives applied
+      ansible.builtin.command: sshd -T
+      register: sshd_extra
+      changed_when: false
+      failed_when: >-
+        'allowstreamlocalforwarding no' not in sshd_extra.stdout or
+        'hostbasedauthentication no' not in sshd_extra.stdout or
+        'permituserenvironment no' not in sshd_extra.stdout or
+        'gatewayports no' not in sshd_extra.stdout or
+        'compression no' not in sshd_extra.stdout or
+        'ignorerhosts yes' not in sshd_extra.stdout
+    - name: Assert no weak DH moduli remain
+      ansible.builtin.command: awk 'NF==7 && $5 < 3071' /etc/ssh/moduli
+      register: moduli_left
+      changed_when: false
+      failed_when: moduli_left.stdout | length > 0
+    - name: Assert moduli file has stock mode 0644
+      ansible.builtin.command: stat -c '%a' /etc/ssh/moduli
+      register: moduli_mode
+      changed_when: false
+      failed_when: moduli_mode.stdout != '644'

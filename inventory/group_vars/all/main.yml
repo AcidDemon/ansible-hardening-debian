@@ -1,0 +1,56 @@
+---
+# Identity & access — single source of truth
+admin_user: acid                    # noqa: var-naming[no-role-prefix]
+deploy_user: ansible                # noqa: var-naming[no-role-prefix]
+ssh_port: 22                        # noqa: var-naming[no-role-prefix]
+management_cidrs:                   # noqa: var-naming[no-role-prefix]
+  - 10.0.0.0/8
+
+# os_base / time
+os_base_timezone: Europe/Berlin
+ntp_servers:                        # noqa: var-naming[no-role-prefix]
+  - 0.debian.pool.ntp.org
+  - 1.debian.pool.ntp.org
+  - 2.debian.pool.ntp.org
+  - 3.debian.pool.ntp.org
+
+# Firewall is owned by ansible-base-debian (single 'inet base_filter'); it opens
+# ssh_port from management_cidrs. Hardening no longer manages nftables.
+
+# Detection / response (both on — user requirement)
+crowdsec_enabled: true
+fail2ban_enabled: true
+
+# 2FA
+ssh_2fa_totp_enabled: true
+ssh_2fa_fido2_enabled: true
+ssh_2fa_totp_nullok: true
+
+# Recommended roles
+aide_enabled: true
+aide_init: true
+lynis_enabled: true
+
+# Safety
+harden_safe_rollback: true          # noqa: var-naming[no-role-prefix]
+harden_rollback_minutes: 20         # noqa: var-naming[no-role-prefix]
+
+# --- harden-plus (phase 2) ---
+# mail relay (non-secret; credentials in vault)
+smtp_host: "smtp.example.com"                # noqa: var-naming[no-role-prefix]
+smtp_port: 587                               # noqa: var-naming[no-role-prefix]  also added to the egress allowlist
+smtp_from: "root@example.com"                # noqa: var-naming[no-role-prefix]
+admin_email: "root@example.com"              # noqa: var-naming[no-role-prefix]
+# ssh
+ssh_prune_moduli: true
+# accounts
+accounts_restrict_su: true
+accounts_remove_installer_sudo: false
+# proc
+hardening_misc_proc_hidepid: false
+# crowdsec console
+crowdsec_console_enroll: true
+# new roles
+rkhunter_enabled: true
+chkrootkit_enabled: true
+security_reporting_enabled: true

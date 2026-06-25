@@ -1,0 +1,13 @@
+---
+os_base_timezone: Europe/Berlin
+base_packages:                       # noqa: var-naming[no-role-prefix]
+  - acl
+  - ca-certificates
+  - chrony
+  - curl
+  - dnsutils
+  - gnupg
+  - needrestart
+  - openssh-server
+  - python3
+  - sudo

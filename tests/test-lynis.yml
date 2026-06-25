@@ -1,0 +1,14 @@
+---
+- name: Apply lynis
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - lynis
+
+- name: Verify lynis
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Assert report produced
+      ansible.builtin.command: test -s /var/log/lynis-report.dat
+      changed_when: false

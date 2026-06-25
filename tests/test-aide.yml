@@ -1,0 +1,19 @@
+---
+- name: Apply aide (skip slow init in CI)
+  hosts: hardened_hosts
+  become: true
+  vars:
+    aide_init: false
+  roles:
+    - aide
+
+- name: Verify aide
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Assert aide installed
+      ansible.builtin.command: dpkg -s aide
+      changed_when: false
+    - name: Assert daily check timer present  # noqa: command-instead-of-module
+      ansible.builtin.command: systemctl is-enabled aidecheck.timer
+      changed_when: false

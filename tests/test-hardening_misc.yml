@@ -1,0 +1,28 @@
+---
+- name: Apply hardening_misc
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - hardening_misc
+
+- name: Verify hardening_misc
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Assert journald persistent
+      ansible.builtin.command: grep -E '^Storage=persistent' /etc/systemd/journald.conf
+      changed_when: false
+    - name: Assert coredumps disabled in limits
+      ansible.builtin.command: grep -E 'hard\s+core\s+0' /etc/security/limits.d/99-coredump.conf
+      changed_when: false
+    - name: Assert cron.allow present
+      ansible.builtin.command: test -f /etc/cron.allow
+      changed_when: false
+    - name: Assert msmtp points at the configured relay (not the stub)
+      ansible.builtin.command: grep -E '^host ' /etc/msmtprc
+      register: msmtp_host
+      changed_when: false
+      failed_when: "smtp_host not in msmtp_host.stdout"
+    - name: Assert root mail alias present
+      ansible.builtin.command: grep -E '^root:' /etc/aliases
+      changed_when: false

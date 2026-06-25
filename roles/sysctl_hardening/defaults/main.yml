@@ -1,0 +1,2 @@
+---
+sysctl_strict_ptrace: false

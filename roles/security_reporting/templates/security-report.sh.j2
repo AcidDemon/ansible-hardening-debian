@@ -1,0 +1,12 @@
+#!/bin/sh
+# Managed by Ansible (security_reporting)
+host="$(hostname)"
+{
+  echo "Security posture report — ${host} — $(date)"
+  echo; echo "== Listening sockets (ss -ntulp) =="; ss -ntulp 2>/dev/null
+  echo; echo "== nftables ruleset =="; nft list ruleset 2>/dev/null
+  echo; echo "== fail2ban =="; fail2ban-client status 2>/dev/null
+  echo; echo "== CrowdSec decisions =="; cscli decisions list 2>/dev/null
+  echo; echo "== CrowdSec metrics =="; cscli metrics 2>/dev/null | head -n 40
+  echo; echo "== Last unattended-upgrade =="; tail -n 20 /var/log/unattended-upgrades/unattended-upgrades.log 2>/dev/null
+} | mail -s "[${host}] security posture $(date +%F)" root

@@ -1,0 +1,13 @@
+---
+- name: Bootstrap — ensure python3 present
+  hosts: hardened_hosts
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Ensure python3 is installed
+      ansible.builtin.raw: test -e /usr/bin/python3 || (apt-get update && apt-get install -y python3)
+      changed_when: false
+
+# Account/group/key creation (admin + deploy users, sshusers/fido2users groups,
+# sudoers) is owned by ansible-base-debian's base_users, which runs before this
+# repo in the base -> hardening -> app order.

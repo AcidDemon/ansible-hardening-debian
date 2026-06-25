@@ -1,0 +1,28 @@
+---
+- name: Apply ssh_2fa
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - ssh_2fa
+
+- name: Verify ssh_2fa (automation login must still work)
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Force a fresh SSH connection (as ansible deploy user)
+      ansible.builtin.meta: reset_connection
+    - name: Reconnect succeeds without TOTP
+      ansible.builtin.wait_for_connection:
+        timeout: 30
+    - name: 2FA drop-in present
+      ansible.builtin.command: test -f /etc/ssh/sshd_config.d/20-2fa.conf
+      changed_when: false
+    - name: Read ansible's effective auth methods
+      ansible.builtin.command: sshd -T -C user=ansible
+      register: amatch
+      changed_when: false
+    - name: Assert ansible is publickey-only (no keyboard-interactive / TOTP)
+      ansible.builtin.assert:
+        that:
+          - "'authenticationmethods publickey' in amatch.stdout_lines"
+        quiet: true

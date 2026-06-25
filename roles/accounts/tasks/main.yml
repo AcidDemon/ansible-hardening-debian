@@ -1,0 +1,83 @@
+---
+- name: Install account-hardening packages
+  ansible.builtin.apt:
+    name:
+      - libpam-pwquality
+      - sudo
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Harden sudo defaults
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/00-hardening
+    content: |
+      Defaults use_pty
+      Defaults logfile="/var/log/sudo.log"
+      Defaults !visiblepw
+      Defaults passwd_timeout=1
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: Configure pwquality
+  ansible.builtin.template:
+    src: pwquality.conf.j2
+    dest: /etc/security/pwquality.conf
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+
+- name: Set login.defs UMASK to 027
+  ansible.builtin.lineinfile:
+    path: /etc/login.defs
+    regexp: '^\s*#?\s*UMASK\s+'
+    line: "UMASK 027"
+    backup: true
+
+- name: Set login.defs ENCRYPT_METHOD to YESCRYPT
+  ansible.builtin.lineinfile:
+    path: /etc/login.defs
+    regexp: '^\s*#?\s*ENCRYPT_METHOD\s+'
+    line: "ENCRYPT_METHOD YESCRYPT"
+
+- name: Set login.defs PASS_MAX_DAYS
+  ansible.builtin.lineinfile:
+    path: /etc/login.defs
+    regexp: '^\s*#?\s*PASS_MAX_DAYS\s+'
+    line: "PASS_MAX_DAYS 365"
+
+# NOTE: faillock here writes config only. Activating it requires pam_faillock
+# wiring in /etc/pam.d/common-auth, which is a lockout risk and is therefore
+# left to a deliberate manual step. Default is disabled.
+- name: Configure faillock thresholds (config only; default disabled)
+  when: accounts_faillock_enabled | bool
+  ansible.builtin.copy:
+    dest: /etc/security/faillock.conf
+    content: |
+      deny = {{ accounts_faillock_deny }}
+      unlock_time = {{ accounts_faillock_unlock_time }}
+      fail_interval = 900
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Restrict su to the sudo group (pam_wheel)
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/su
+    regexp: '^#?\s*auth\s+required\s+pam_wheel\.so(?!.*trust)'
+    line: "auth       required   pam_wheel.so use_uid group=sudo"
+    backup: true
+  when: accounts_restrict_su | bool
+
+- name: Remove the installer account (debian) from sudo (optional)
+  ansible.builtin.command: gpasswd -d debian sudo
+  register: accounts_deb_sudo
+  changed_when: "'Removing user' in (accounts_deb_sudo.stdout + accounts_deb_sudo.stderr)"
+  failed_when:
+    - accounts_deb_sudo.rc != 0
+    - "'is not a member' not in (accounts_deb_sudo.stdout + accounts_deb_sudo.stderr)"
+    - "'does not exist' not in (accounts_deb_sudo.stdout + accounts_deb_sudo.stderr)"
+  when: accounts_remove_installer_sudo | bool

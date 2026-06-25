@@ -1,0 +1,7 @@
+---
+- name: Force a fresh SSH connection
+  ansible.builtin.meta: reset_connection
+
+- name: Reconnect succeeds (we are not locked out)
+  ansible.builtin.wait_for_connection:
+    timeout: 30

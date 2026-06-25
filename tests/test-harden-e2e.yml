@@ -1,0 +1,63 @@
+---
+- name: E2E — assert the hardened end-state
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Services are active
+      ansible.builtin.command: systemctl is-active {{ item }} # noqa: command-instead-of-module
+      changed_when: false
+      register: svc
+      failed_when: svc.stdout != 'active'
+      loop: [crowdsec, crowdsec-firewall-bouncer, fail2ban, auditd, chrony]
+
+    - name: Effective sshd config is hardened
+      ansible.builtin.command: sshd -T
+      changed_when: false
+      register: sshd_t
+    - name: Assert sshd directives
+      ansible.builtin.assert:
+        that:
+          - "'permitrootlogin no' in sshd_t.stdout"
+          - "'passwordauthentication no' in sshd_t.stdout"
+          - "'allowgroups sshusers' in sshd_t.stdout"
+        quiet: true
+
+    - name: Drop-ins and sysctl present
+      ansible.builtin.command: test -f {{ item }}
+      changed_when: false
+      loop:
+        - /etc/ssh/sshd_config.d/10-hardening.conf
+        - /etc/ssh/sshd_config.d/20-2fa.conf
+        - /etc/sysctl.d/99-hardening.conf
+        - /etc/fail2ban/jail.local
+
+    - name: Assert su restricted + new sshd directives + no weak moduli
+      ansible.builtin.shell: |
+        set -euo pipefail
+        grep -qE '^auth\s+required\s+pam_wheel\.so.*group=sudo' /etc/pam.d/su
+        sshd_t="$(sshd -T)"
+        [[ "$sshd_t" == *'hostbasedauthentication no'* ]]
+        [ -z "$(awk 'NF==7 && $5 < 3071' /etc/ssh/moduli)" ]
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Assert scanners + reporting present
+      ansible.builtin.command: systemctl is-enabled security-report.timer  # noqa: command-instead-of-module
+      changed_when: false
+
+    - name: Assert rootkit scanners installed
+      ansible.builtin.command: dpkg -s {{ item }}
+      changed_when: false
+      loop: [rkhunter, chkrootkit, logwatch]
+
+    - name: Password + root SSH are refused (from the control node)
+      ansible.builtin.command: >-
+        ssh -F /dev/null -p {{ ssh_port }} -o BatchMode=yes -o PreferredAuthentications=password
+        -o PubkeyAuthentication=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+        -o ConnectTimeout=8 root@{{ ansible_host }} true
+      delegate_to: localhost
+      become: false
+      changed_when: false
+      register: rootssh
+      failed_when: rootssh.rc == 0

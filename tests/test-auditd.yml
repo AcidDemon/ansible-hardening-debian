@@ -1,0 +1,21 @@
+---
+- name: Apply auditd
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - auditd
+
+- name: Verify auditd
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Assert auditd active  # noqa: command-instead-of-module
+      ansible.builtin.command: systemctl is-active auditd
+      register: ad
+      changed_when: false
+      failed_when: ad.stdout != 'active'
+    - name: Assert audit rules loaded
+      ansible.builtin.command: auditctl -l
+      register: rules
+      changed_when: false
+      failed_when: "'identity' not in rules.stdout"

@@ -1,0 +1,19 @@
+---
+- name: Apply fail2ban
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - fail2ban
+
+- name: Verify fail2ban
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Assert fail2ban active  # noqa: command-instead-of-module
+      ansible.builtin.command: systemctl is-active fail2ban
+      register: f2b
+      changed_when: false
+      failed_when: f2b.stdout != 'active'
+    - name: Assert sshd jail present
+      ansible.builtin.command: fail2ban-client status sshd
+      changed_when: false

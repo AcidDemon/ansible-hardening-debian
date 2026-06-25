@@ -1,0 +1,58 @@
+---
+- name: Configure rkhunter
+  when: rkhunter_enabled | bool
+  block:
+    - name: Install rkhunter
+      ansible.builtin.apt:
+        name: rkhunter
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+    - name: Configure rkhunter.conf
+      ansible.builtin.lineinfile:
+        path: /etc/rkhunter.conf
+        regexp: "^#?\\s*{{ item.k }}="
+        line: "{{ item.k }}={{ item.v }}"
+        backup: true
+      loop:
+        - { k: "WEB_CMD", v: '""' }
+        - { k: "UPDATE_MIRRORS", v: "1" }
+        - { k: "MIRRORS_MODE", v: "0" }
+        - { k: "PKGMGR", v: "DPKG" }
+        - { k: "MAIL-ON-WARNING", v: "root" }
+      loop_control:
+        label: "{{ item.k }}"
+    - name: Enable rkhunter daily cron + DB update
+      ansible.builtin.lineinfile:
+        path: /etc/default/rkhunter
+        regexp: "^#?\\s*{{ item.k }}="
+        line: '{{ item.k }}="{{ item.v }}"'
+        create: true
+        mode: "0644"
+      loop:
+        - { k: "CRON_DAILY_RUN", v: "true" }
+        - { k: "CRON_DB_UPDATE", v: "true" }
+        - { k: "REPORT_EMAIL", v: "root" }
+      loop_control:
+        label: "{{ item.k }}"
+    - name: Initialise the rkhunter file-properties database
+      ansible.builtin.command: rkhunter --propupd
+      args:
+        creates: /var/lib/rkhunter/db/rkhunter.dat
+
+- name: Configure chkrootkit
+  when: chkrootkit_enabled | bool
+  block:
+    - name: Install chkrootkit
+      ansible.builtin.apt:
+        name: chkrootkit
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+    - name: Enable chkrootkit daily run
+      ansible.builtin.lineinfile:
+        path: /etc/chkrootkit/chkrootkit.conf
+        regexp: '^RUN_DAILY='
+        line: 'RUN_DAILY="true"'
+        create: true
+        mode: "0644"

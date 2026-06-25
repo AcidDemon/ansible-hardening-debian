@@ -1,0 +1,20 @@
+---
+- name: Apply os_base
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - os_base
+
+- name: Verify os_base
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Timezone is set
+      ansible.builtin.command: timedatectl show -p Timezone --value
+      register: tz
+      changed_when: false
+      failed_when: tz.stdout != 'Europe/Berlin'
+    - name: Required packages installed
+      ansible.builtin.command: dpkg -s {{ item }}
+      changed_when: false
+      loop: [chrony, openssh-server, sudo, curl]

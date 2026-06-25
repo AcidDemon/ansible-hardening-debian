@@ -1,0 +1,24 @@
+# Build / runtime artifacts
+.vagrant/
+*.retry
+__pycache__/
+.ansible/
+*.token
+
+# Keys — never commit privates; keep the dir via .gitkeep, allow *.pub
+files/ssh/*
+!files/ssh/.gitkeep
+id_*
+*.pem
+*-deploy
+
+# Local docs and tooling scratch
+.claude/
+.superpowers/
+CLAUDE.md
+AGENTS.md
+
+# ansible-vault password (never commit)
+.vault-pass
+inventory/group_vars/all/vault.yml
+claude-resume

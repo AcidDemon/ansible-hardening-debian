@@ -1,0 +1,16 @@
+---
+- name: Apply time_sync
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - time_sync
+
+- name: Verify time_sync
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Assert chrony is active  # noqa: command-instead-of-module
+      ansible.builtin.command: systemctl is-active chrony
+      register: ch
+      changed_when: false
+      failed_when: ch.stdout != 'active'

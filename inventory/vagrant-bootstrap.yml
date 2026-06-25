@@ -1,0 +1,9 @@
+---
+hardened_hosts:
+  hosts:
+    harden:
+      ansible_host: 10.99.0.10
+      ansible_user: vagrant
+      ansible_ssh_private_key_file: .vagrant/machines/harden/libvirt/private_key
+      ansible_ssh_common_args: "-F /dev/null -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      management_cidrs: ["10.99.0.0/24"]

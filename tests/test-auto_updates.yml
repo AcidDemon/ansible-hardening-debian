@@ -1,0 +1,17 @@
+---
+- name: Apply auto_updates
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - auto_updates
+
+- name: Verify auto_updates
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Assert periodic config present
+      ansible.builtin.command: grep -q 'Unattended-Upgrade "1"' /etc/apt/apt.conf.d/20auto-upgrades
+      changed_when: false
+    - name: Assert security origins configured
+      ansible.builtin.command: grep -q 'Debian-Security' /etc/apt/apt.conf.d/50unattended-upgrades
+      changed_when: false

@@ -1,0 +1,6 @@
+---
+# Copy to vault.yml, fill real values, then:
+#   ansible-vault encrypt inventory/group_vars/all/vault.yml
+# vault.yml itself is git-ignored. Only needed when hardening_misc_msmtp is true.
+vault_smtp_user: ""
+vault_smtp_password: ""

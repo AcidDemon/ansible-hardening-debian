@@ -1,0 +1,10 @@
+---
+hardened_hosts:
+  hosts:
+    harden:
+      ansible_host: 10.99.0.10
+      ansible_user: ansible
+      ansible_ssh_private_key_file: files/ssh/deploy
+      ansible_ssh_common_args: "-F /dev/null -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      # Test box is on 10.99.0.0/24 — allow SSH + whitelist from there so we never self-lock.
+      management_cidrs: ["10.99.0.0/24"]

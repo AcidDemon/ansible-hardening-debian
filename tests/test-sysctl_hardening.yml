@@ -1,0 +1,21 @@
+---
+- name: Apply sysctl_hardening
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - sysctl_hardening
+
+- name: Verify sysctl_hardening
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Assert kptr_restrict applied
+      ansible.builtin.command: sysctl -n kernel.kptr_restrict
+      register: kptr
+      changed_when: false
+      failed_when: kptr.stdout != '2'
+    - name: Assert syncookies applied
+      ansible.builtin.command: sysctl -n net.ipv4.tcp_syncookies
+      register: sc
+      changed_when: false
+      failed_when: sc.stdout != '1'

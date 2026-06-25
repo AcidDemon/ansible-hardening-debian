@@ -1,0 +1,4 @@
+---
+auto_updates_reboot: false
+auto_updates_reboot_time: "02:00"
+auto_updates_mail: root

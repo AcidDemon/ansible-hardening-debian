@@ -1,0 +1,21 @@
+---
+- name: Apply security_reporting
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - security_reporting
+
+- name: Verify security_reporting
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Assert logwatch + mailx installed
+      ansible.builtin.command: dpkg -s {{ item }}
+      changed_when: false
+      loop: [logwatch, bsd-mailx]
+    - name: Assert report script present + executable
+      ansible.builtin.command: test -x /usr/local/sbin/security-report.sh
+      changed_when: false
+    - name: Assert report timer enabled
+      ansible.builtin.command: systemctl is-enabled security-report.timer  # noqa: command-instead-of-module
+      changed_when: false

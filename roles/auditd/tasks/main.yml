@@ -1,0 +1,35 @@
+---
+- name: Install auditd
+  ansible.builtin.apt:
+    name:
+      - auditd
+      - audispd-plugins
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Deploy audit rules
+  ansible.builtin.template:
+    src: hardening.rules.j2
+    dest: /etc/audit/rules.d/hardening.rules
+    owner: root
+    group: root
+    mode: "0640"
+  register: auditd_rules
+
+- name: Enable and start auditd
+  ansible.builtin.systemd_service:
+    name: auditd
+    enabled: true
+    state: started
+
+- name: Load audit rules  # noqa: no-handler
+  ansible.builtin.command: augenrules --load
+  changed_when: false
+  when: auditd_rules is changed
+
+- name: Verify audit rules loaded
+  ansible.builtin.command: auditctl -l
+  register: auditctl_list
+  changed_when: false
+  failed_when: "'identity' not in auditctl_list.stdout"

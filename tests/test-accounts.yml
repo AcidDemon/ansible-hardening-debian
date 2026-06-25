@@ -1,0 +1,23 @@
+---
+- name: Apply accounts
+  hosts: hardened_hosts
+  become: true
+  roles:
+    - accounts
+
+- name: Verify accounts
+  hosts: hardened_hosts
+  become: true
+  tasks:
+    - name: Assert pwquality minlen set
+      ansible.builtin.command: grep -E '^minlen = 12' /etc/security/pwquality.conf
+      changed_when: false
+    - name: UMASK 027 in login.defs
+      ansible.builtin.command: grep -E '^UMASK\s+027' /etc/login.defs
+      changed_when: false
+    - name: Assert sudo use_pty hardening present
+      ansible.builtin.command: grep -q 'use_pty' /etc/sudoers.d/00-hardening
+      changed_when: false
+    - name: Assert su restricted to the sudo group
+      ansible.builtin.command: grep -E '^auth\s+required\s+pam_wheel\.so.*group=sudo' /etc/pam.d/su
+      changed_when: false

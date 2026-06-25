@@ -1,0 +1,7 @@
+---
+exclude_paths:
+  - .ansible/
+  - .vagrant/
+  - docs/
+skip_list:
+  - var-naming[no-role-prefix]

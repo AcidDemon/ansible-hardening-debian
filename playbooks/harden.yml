@@ -4,9 +4,9 @@
   become: true
   gather_facts: true
   # Scope the short role names below to this collection so they resolve to
-  # acidnetworks.hardening.* (installed) or roles/ (standalone dev).
+  # acidnetworks.hardening_debian.* (installed) or roles/ (standalone dev).
   collections:
-    - acidnetworks.hardening
+    - acidnetworks.hardening_debian
   pre_tasks:
     - name: Arm the dead-man's-switch before any cutover
       ansible.builtin.include_tasks: tasks/arm_rollback.yml
@@ -14,10 +14,14 @@
   tasks:
     - name: Apply hardening roles (disarm always runs if we stay reachable)
       block:
+        # Consumers that own their OS-identity / time layer (e.g. a Samba AD DC with
+        # its own os_base doing krb5/DNS and a signed-NTP time_sync) set these false.
         - name: Apply os_base role
           ansible.builtin.import_role: { name: os_base }
+          when: harden_manage_os_base | default(true) | bool
         - name: Apply time_sync role
           ansible.builtin.import_role: { name: time_sync }
+          when: harden_manage_time_sync | default(true) | bool
         - name: Apply accounts role
           ansible.builtin.import_role: { name: accounts }
 

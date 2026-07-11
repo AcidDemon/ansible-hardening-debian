@@ -1,7 +1,28 @@
 ---
-# Safety: AllowGroups (below) will refuse SSH to anyone not in ssh_allow_groups. Refuse to
-# apply if the user we're connected as isn't in one of those groups — fail loud here rather
-# than lock ourselves out (the rollback timer is the backstop, this is the seatbelt).
+# Self-healing lockout guard. AllowGroups (deployed below) refuses SSH to anyone not in
+# ssh_allow_groups. BEFORE that goes live, guarantee the admin / deploy / connecting users
+# are in the first allow-group. Only touches users that already EXIST — creating login users
+# (with keys) is base_users' job, not hardening's, so a missing user is skipped, not created.
+- name: Ensure the SSH allow-groups exist
+  ansible.builtin.group:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ ssh_allow_groups }}"
+
+- name: Enumerate local users
+  ansible.builtin.getent:
+    database: passwd
+
+- name: Add admin/deploy/connecting users to an allowed SSH group (prevent lockout)
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "{{ ssh_allow_groups[0] }}"
+    append: true
+  loop: "{{ [admin_user | default(''), deploy_user | default(''), ansible_user | default('')] | select('string') | reject('equalto', '') | unique }}"
+  when: item in ansible_facts.getent_passwd
+
+# Final safety net: after self-healing, the connecting user MUST be in an allowed group —
+# fail loud (before the cutover) if for some reason it still isn't. Rollback is the backstop.
 - name: Resolve the connecting user's groups
   ansible.builtin.command: "id -nG {{ ansible_user }}"
   register: ssh_login_user_groups

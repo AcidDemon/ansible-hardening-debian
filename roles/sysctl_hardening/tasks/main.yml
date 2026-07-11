@@ -7,3 +7,4 @@
     group: root
     mode: "0644"
   notify: Reload sysctl
+  when: sysctl_hardening_enabled | bool

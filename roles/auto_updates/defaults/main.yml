@@ -1,4 +1,6 @@
 ---
+# Set false to skip unattended-upgrades entirely (e.g. gate updates on a DC).
+auto_updates_enabled: true
 auto_updates_reboot: false
 auto_updates_reboot_time: "02:00"
 auto_updates_mail: root

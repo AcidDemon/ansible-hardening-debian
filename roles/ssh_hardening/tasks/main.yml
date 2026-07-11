@@ -1,4 +1,23 @@
 ---
+# Safety: AllowGroups (below) will refuse SSH to anyone not in ssh_allow_groups. Refuse to
+# apply if the user we're connected as isn't in one of those groups — fail loud here rather
+# than lock ourselves out (the rollback timer is the backstop, this is the seatbelt).
+- name: Resolve the connecting user's groups
+  ansible.builtin.command: "id -nG {{ ansible_user }}"
+  register: ssh_login_user_groups
+  changed_when: false
+  when: ansible_user is defined
+
+- name: Assert the connecting user stays in an allowed group after hardening
+  ansible.builtin.assert:
+    that: ssh_allow_groups | intersect(ssh_login_user_groups.stdout.split()) | length > 0
+    fail_msg: >-
+      SSH user '{{ ansible_user }}' is in groups [{{ ssh_login_user_groups.stdout }}],
+      but ssh_allow_groups is [{{ ssh_allow_groups | join(' ') }}] — applying AllowGroups
+      would lock you out. Add the user to one of those groups or adjust ssh_allow_groups.
+    quiet: true
+  when: ansible_user is defined
+
 - name: Deploy the SSH hardening drop-in
   ansible.builtin.template:
     src: 10-hardening.conf.j2

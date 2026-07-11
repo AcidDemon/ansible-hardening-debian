@@ -1,0 +1,42 @@
+---
+namespace: acidnetworks
+name: hardening
+version: 0.1.0
+readme: README.md
+authors:
+  - AcidDemon <c.schlueter@acidnetworks.net>
+description: >-
+  Debian 13 hardening layer: SSH hardening + 2FA, auditd, AIDE, CrowdSec, fail2ban,
+  auto-updates, rootkit scanners and Lynis, with a systemd-timer rollback dead-man's-switch.
+license:
+  - MIT
+tags:
+  - debian
+  - hardening
+  - security
+repository: https://github.com/AcidDemon/ansible-hardening-debian
+dependencies:
+  community.general: "*"
+  ansible.posix: "*"
+# Ship roles/ + playbooks/ (harden.yml + tasks/ carry the rollback safety logic) + README/LICENSE.
+# Everything below is dev scaffolding or secrets — files/ holds committed deploy keys, .vault-pass
+# holds the vault password. Must NOT enter the artifact.
+build_ignore:
+  - .ansible
+  - .ansible-lint
+  - .claude
+  - .superpowers
+  - .git
+  - .gitignore
+  - .envrc
+  - .yamllint
+  - .vault-pass
+  - ansible.cfg
+  - requirements.yml
+  - site.yml
+  - inventory
+  - files
+  - tests
+  - Vagrantfile
+  - playbooks/roles
+  - "*.tar.gz"

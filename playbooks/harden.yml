@@ -3,6 +3,10 @@
   hosts: hardened_hosts
   become: true
   gather_facts: true
+  # Scope the short role names below to this collection so they resolve to
+  # acidnetworks.hardening.* (installed) or roles/ (standalone dev).
+  collections:
+    - acidnetworks.hardening
   pre_tasks:
     - name: Arm the dead-man's-switch before any cutover
       ansible.builtin.include_tasks: tasks/arm_rollback.yml

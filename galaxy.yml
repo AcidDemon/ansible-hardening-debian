@@ -19,8 +19,7 @@ dependencies:
   community.general: "*"
   ansible.posix: "*"
 # Ship roles/ + playbooks/ (harden.yml + tasks/ carry the rollback safety logic) + README/LICENSE.
-# Everything below is dev scaffolding or secrets — files/ holds committed deploy keys, .vault-pass
-# holds the vault password. Must NOT enter the artifact.
+# Everything below is dev scaffolding or secrets and must NOT enter the artifact.
 build_ignore:
   - .ansible
   - .ansible-lint

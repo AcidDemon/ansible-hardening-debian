@@ -28,8 +28,10 @@
 -w /etc/pam.d/ -p wa -k pam
 
 ## Unauthorized access attempts to files (EACCES/EPERM)
--a always,exit -F arch=b64 -S open,openat,truncate,ftruncate -F exit=-EACCES -F auid>={{ auditd_uid_min }} -F auid!=4294967295 -k access
--a always,exit -F arch=b64 -S open,openat,truncate,ftruncate -F exit=-EPERM  -F auid>={{ auditd_uid_min }} -F auid!=4294967295 -k access
+## arm64 has no open(2), only openat(2); auditctl stops at an unknown syscall.
+{% set open_calls = "open,openat" if ansible_facts.architecture == "x86_64" else "openat" %}
+-a always,exit -F arch=b64 -S {{ open_calls }},truncate,ftruncate -F exit=-EACCES -F auid>={{ auditd_uid_min }} -F auid!=4294967295 -k access
+-a always,exit -F arch=b64 -S {{ open_calls }},truncate,ftruncate -F exit=-EPERM  -F auid>={{ auditd_uid_min }} -F auid!=4294967295 -k access
 
 ## Kernel module load/unload
 -a always,exit -F arch=b64 -S init_module,delete_module,finit_module -k modules

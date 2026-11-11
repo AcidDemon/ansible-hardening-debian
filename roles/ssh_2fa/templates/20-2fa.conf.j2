@@ -11,8 +11,9 @@ Match User {{ deploy_user }}
     AuthenticationMethods publickey
 
 {% if ssh_2fa_fido2_enabled %}
-# Hardware-key tier: FIDO2 (sk-*) key + touch/PIN, no TOTP.
-Match Group fido2users
+# Hardware-key tier: FIDO2 sk-ed25519 key + touch/PIN, no TOTP.
+Match Group fido2users User *,!{{ deploy_user }}
     AuthenticationMethods publickey
     PubkeyAuthOptions verify-required
+    PubkeyAcceptedAlgorithms sk-ssh-ed25519@openssh.com
 {% endif %}

@@ -197,14 +197,15 @@ Save the secret and scratch codes in a password manager. The command creates
 
 ```bash
 # On the operator workstation:
-ssh-keygen -t ed25519-sk -f ~/.ssh/id_ed25519_sk -C "fido2-$(hostname)"
+ssh-keygen -t ed25519-sk -O verify-required -f ~/.ssh/id_ed25519_sk -C "fido2-$(hostname)"
 
 # Add the public key to the managed host's authorized_keys for the user.
 # Then add the user to the fido2users group on the managed host:
 sudo usermod -aG fido2users <username>
 ```
 
-FIDO2 users authenticate with key-touch only; TOTP is not required for accounts
+FIDO2 users authenticate with key touch plus PIN and only sk-ed25519 keys are
+accepted for them; TOTP is not required for accounts
 in the `fido2users` group.
 
 ### Lock down nullok after enrollment

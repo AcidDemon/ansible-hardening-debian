@@ -25,7 +25,7 @@ authentication in a single idempotent run.
 | `time_sync` | Configures chrony for NTP synchronisation |
 | `accounts` | Enforces password-quality policy (pwquality) and optional faillock account-locking |
 | `ssh_hardening` | Drops `10-hardening.conf` into `sshd_config.d`: disables password auth, pins the `sshusers` group, restricts ciphers/MACs/KEX (optional) |
-| `crowdsec` | Installs CrowdSec, enables `sshd` + `linux` collections, whitelists `management_cidrs` |
+| `crowdsec` | Installs CrowdSec, enables `sshd` + `linux` collections, whitelists `management_cidrs` and the host's own addresses. `crowdsec_upstream_repo: true` takes the engine from CrowdSec's apt repo (Debian 13 ships 1.4.6) |
 | `fail2ban` | Installs fail2ban with SSH jail; ignores `management_cidrs` (via `fail2ban_ignoreip`) |
 | `auto_updates` | Enables unattended-upgrades for security updates with optional auto-reboot |
 | `sysctl_hardening` | Applies kernel hardening via sysctl (IP forwarding off, ICMP redirects off, etc.) |

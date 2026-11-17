@@ -4,4 +4,11 @@ crowdsec_collections:
   - crowdsecurity/sshd
   - crowdsecurity/linux
 crowdsec_whitelist_cidrs: "{{ management_cidrs | default([]) }}"
+# Also whitelist the host's own default IPv4/IPv6, so a curl test from the box
+# against its own sites cannot ban it.
+crowdsec_whitelist_self: true
 crowdsec_console_enroll: true
+# Engine from CrowdSec's apt repo instead of Debian's. Trixie ships 1.4.6, and
+# the hub index for it is frozen at parsers that no longer match current
+# software (e.g. Caddy's JSON log). The firewall bouncer stays Debian's.
+crowdsec_upstream_repo: false

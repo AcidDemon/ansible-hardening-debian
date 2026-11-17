@@ -2,6 +2,77 @@
 - name: Configure CrowdSec
   when: crowdsec_enabled | bool
   block:
+    - name: Upstream engine repository
+      when: crowdsec_upstream_repo | bool
+      block:
+        - name: The deb822_repository module needs python3-debian
+          ansible.builtin.apt:
+            name: python3-debian
+            state: present
+            update_cache: true
+            cache_valid_time: 3600
+
+        - name: CrowdSec apt repository
+          ansible.builtin.deb822_repository:
+            name: crowdsec
+            types: deb
+            uris: https://packagecloud.io/crowdsec/crowdsec/any
+            suites: any
+            components: main
+            signed_by: https://packagecloud.io/crowdsec/crowdsec/gpgkey
+
+        # Only the engine comes from there. Everything else in the repo (its
+        # own bouncer packages among them) stays below Debian's.
+        - name: Pin only the engine to the CrowdSec repository
+          ansible.builtin.copy:
+            dest: /etc/apt/preferences.d/crowdsec
+            content: |
+              Package: *
+              Pin: origin packagecloud.io
+              Pin-Priority: 100
+
+              Package: crowdsec
+              Pin: origin packagecloud.io
+              Pin-Priority: 990
+            mode: "0644"
+
+        # The unattended-upgrades origin list only matches Debian.
+        - name: Let unattended-upgrades update the engine
+          ansible.builtin.copy:
+            dest: /etc/apt/apt.conf.d/52unattended-upgrades-crowdsec
+            content: |
+              Unattended-Upgrade::Origins-Pattern:: "site=packagecloud.io";
+            mode: "0644"
+
+        # state=latest: present would leave an installed Debian 1.4.6 alone.
+        - name: Upstream engine
+          ansible.builtin.apt:
+            name: crowdsec
+            state: latest # noqa: package-latest
+            update_cache: true
+          environment:
+            DEBIAN_FRONTEND: noninteractive
+          register: cs_upstream
+
+        # A 1.4.6 process still running reads the new hub on its next reload
+        # and dies on the newer scenario format.
+        - name: Restart into the new engine
+          ansible.builtin.systemd_service:
+            name: crowdsec
+            state: restarted
+          when: cs_upstream is changed # noqa: no-handler (must run before the hub tasks, not at the end)
+
+        # Debian's engine linked its hub items into /var/lib/crowdsec/hub; the
+        # upstream one keeps its hub in /etc/crowdsec/hub and treats those
+        # links as hand-made "local" items it never updates. The collections
+        # below put the current items back.
+        - name: Drop links into Debian's old hub
+          ansible.builtin.command:
+            argv: [find, /etc/crowdsec, -lname, "/var/lib/crowdsec/hub/*", -print, -delete]
+          register: cs_old_links
+          changed_when: cs_old_links.stdout | length > 0
+          notify: Restart crowdsec
+
     - name: Install crowdsec and the firewall bouncer (native Debian packages)
       ansible.builtin.apt:
         name:

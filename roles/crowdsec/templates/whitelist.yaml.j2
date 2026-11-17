@@ -6,3 +6,10 @@ whitelist:
 {% for c in crowdsec_whitelist_cidrs %}
     - "{{ c }}"
 {% endfor %}
+{% set own = [ansible_facts.default_ipv4.address | default(''), ansible_facts.default_ipv6.address | default('')] | select | list %}
+{% if crowdsec_whitelist_self | bool and own %}
+  ip:
+{%   for a in own %}
+    - "{{ a }}"
+{%   endfor %}
+{% endif %}

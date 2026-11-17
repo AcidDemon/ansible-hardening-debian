@@ -27,6 +27,7 @@
   ansible.builtin.command: "id -nG {{ ansible_user }}"
   register: ssh_login_user_groups
   changed_when: false
+  check_mode: false # read-only; skipped in --check it left the assert below with no groups
   when: ansible_user is defined
 
 - name: Assert the connecting user stays in an allowed group after hardening
